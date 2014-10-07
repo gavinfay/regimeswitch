@@ -1,68 +1,105 @@
+#' Code to run the Markov Switching regime shift models in JAGS
+#'
+#' @author Gavin Fay
+
 
 memory.limit(size=4084)
 #setwd("gfay/sandbox/regime/")
-setwd("C:/Research/regime/")
-require(rjags)
+if (Sys.info()[['sysname']] == "Windows") setwd("C:/Research/regime/")
+if (Sys.info()[['sysname']] == "Darwin") setwd("/research/regimeswitch/")
+
+library(rjags)
 
 for (isp in 1:5)
 {
-isp=5  
+#isp=5  
   if (isp==1) infile = "gb_cod.dat"
   if (isp==2) infile = "gom_had.dat"
   if (isp==3) infile = "gb_ytf.dat"
   if (isp==4) infile = "sne_winf.dat" 
   if (isp==5) infile = "gom_cod2.dat"
-  
+  infile <- paste("data/",infile,sep="")
+
   Nobs = scan(infile,skip=1,n=1)
   Nreg = scan(infile,skip=0,n=1)
   Yobs = scan(infile,skip=2,n=Nobs)
   obsErr = scan(infile,skip=3,n=Nobs)
   Catch = scan(infile,skip=4,n=Nobs)
   model1.data = list(N=Nobs,I=Yobs,CV=obsErr,C=Catch)
-isp=5 
-model2.jags2save = c("K","r","Sigma2","Tau2","TransProbs","Regime","B","RegimeNext","FMSY","NextCatch","q")
+ 
+  model2.jags2save = c("K","r","Sigma2","Tau2","TransProbs","Regime","B",
+                     "RegimeNext","FMSY","NextCatch","q")
 
-inits <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00004, isigma2=100, itau2=100,TransProbs=c(0.97,0.97),Regime=sample(1:2,Nobs,replace=TRUE),q=-0.01)
-inits2 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00003, isigma2=80, itau2=150,TransProbs=c(0.7,0.8),Regime=sample(1:2,Nobs,replace=TRUE),q=-0.04)
-inits3 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00005, isigma2=120, itau2=50,TransProbs=c(0.9,0.7),Regime=sample(1:2,Nobs,replace=TRUE),q=-0.006)
+  inits <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                r2frac=runif(1,0.2,0.8), k=0.00004, isigma2=100, itau2=100,
+                TransProbs=c(0.97,0.97),Regime=sample(1:2,Nobs,replace=TRUE),
+                q=-0.01)
+  inits2 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                 r2frac=runif(1,0.2,0.8), k=0.00003, isigma2=80, itau2=150,
+                 TransProbs=c(0.7,0.8),Regime=sample(1:2,Nobs,replace=TRUE),
+                 q=-0.04)
+  inits3 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                 r2frac=runif(1,0.2,0.8), k=0.00005, isigma2=120, itau2=50,
+                 TransProbs=c(0.9,0.7),Regime=sample(1:2,Nobs,replace=TRUE),
+                 q=-0.006)
 
-inits <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00004, isigma2=100, itau2=100,TransProbs=c(0.97,0.97),Regime=sample(1:2,Nobs,replace=TRUE),iq=800,idep=0)
-inits2 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00003, isigma2=80, itau2=150,TransProbs=c(0.7,0.8),Regime=sample(1:2,Nobs,replace=TRUE),iq=600,idep=-0.5)
-inits3 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00005, isigma2=120, itau2=50,TransProbs=c(0.9,0.7),Regime=sample(1:2,Nobs,replace=TRUE),iq=450,idep=-0.2) 
-if (isp ==1 | isp ==4)
- {
-  inits <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00004, isigma2=100, itau2=100,TransProbs=c(0.97,0.97),Regime=sample(1:2,Nobs,replace=TRUE),iq=8000,idep=0)
-  inits2 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00003, isigma2=80, itau2=150,TransProbs=c(0.7,0.8),Regime=sample(1:2,Nobs,replace=TRUE),iq=6000,idep=-0.5)
-  inits3 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),r2frac=runif(1,0.2,0.8), k=0.00005, isigma2=120, itau2=50,TransProbs=c(0.9,0.7),Regime=sample(1:2,Nobs,replace=TRUE),iq=4500,idep=-0.2)
- }
-model2.init <- list(inits,inits2,inits3)
+  inits <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                r2frac=runif(1,0.2,0.8), k=0.00004, isigma2=100, itau2=100,
+                TransProbs=c(0.97,0.97),Regime=sample(1:2,Nobs,replace=TRUE),
+                iq=800,idep=0)
+  inits2 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                 r2frac=runif(1,0.2,0.8), k=0.00003, isigma2=80, itau2=150,
+                 TransProbs=c(0.7,0.8),Regime=sample(1:2,Nobs,replace=TRUE),
+                 iq=600,idep=-0.5)
+  inits3 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                 r2frac=runif(1,0.2,0.8), k=0.00005, isigma2=120, itau2=50,
+                 TransProbs=c(0.9,0.7),Regime=sample(1:2,Nobs,replace=TRUE),
+                 iq=450,idep=-0.2) 
+  # Some alternative initial q values for some of the stocks
+  if (isp ==1 | isp ==4)
+   {
+    inits <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                  r2frac=runif(1,0.2,0.8), k=0.00004, isigma2=100, itau2=100,
+                  TransProbs=c(0.97,0.97),Regime=sample(1:2,Nobs,replace=TRUE),
+                  iq=8000,idep=0)
+    inits2 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                   r2frac=runif(1,0.2,0.8), k=0.00003, isigma2=80, itau2=150,
+                   TransProbs=c(0.7,0.8),Regime=sample(1:2,Nobs,replace=TRUE),
+                   iq=6000,idep=-0.5)
+    inits3 <- list(P=exp(rnorm(Nobs+1,-0.6,0.2)),r1=exp(rnorm(1,-0.5,0.2)),
+                   r2frac=runif(1,0.2,0.8), k=0.00005, isigma2=120, itau2=50,
+                   TransProbs=c(0.9,0.7),Regime=sample(1:2,Nobs,replace=TRUE),
+                   iq=4500,idep=-0.2)
+   }
 
-#jags <- jags.model("C:/Research/regime/schaef_jags_notatK.txt",
-#jags <- jags.model("regime_schaef_jags_notatK.txt",
-jags <- jags.model("regime_schaef_jags_notatK_2.txt",
+  model2.init <- list(inits,inits2,inits3)
+
+  #jags <- jags.model("C:/Research/regime/schaef_jags_notatK.txt",
+  #jags <- jags.model("regime_schaef_jags_notatK.txt",
+  jags <- jags.model("regime_schaef_jags_notatK_2.txt",
                    data = model1.data,
                    inits = model2.init,
                    n.chains = 3,
                    n.adapt = 100)
 
-update(jags,500000)  ####burn-in
-mod2 <- jags.samples(jags,model2.jags2save,n.iter=1000000,thin=1000)
-#mod2 <- jags.samples(jags,model2.jags2save,n.iter=10000,thin=10)
-#dic.mod2 <- dic.samples(jags,n.iter=10000,thin=10,type="pD")
-dic.mod2 <- dic.samples(jags,n.iter=1000000,thin=1000,type="pD")
+  update(jags,500000)  ####burn-in
+  mod2 <- jags.samples(jags,model2.jags2save,n.iter=1000000,thin=1000)
+  #mod2 <- jags.samples(jags,model2.jags2save,n.iter=10000,thin=10)
+  #dic.mod2 <- dic.samples(jags,n.iter=10000,thin=10,type="pD")
+  dic.mod2 <- dic.samples(jags,n.iter=1000000,thin=1000,type="pD")
 
-#xx is a list containing sampled vectors of desired nodes
-mod2.results <- NULL
-mod2.results$mod <- mod2
-mod2.results$dic <- dic.mod2
+  #xx is a list containing sampled vectors of desired nodes
+  mod2.results <- NULL
+  mod2.results$mod <- mod2
+  mod2.results$dic <- dic.mod2
 
-##save(mod2.results,file=paste(isp,"_mod2_posterior.Rdata",sep=""))
-##save(mod2.results,file=paste(isp,"_mod2_big_posterior.Rdata",sep=""))
-##save(mod2.results,file=paste(isp,"_mod2_test_posterior.Rdata",sep=""))
-##save(mod2.results,file=paste(isp,"_mod2_20140604_2_posterior.Rdata",sep=""))
-save(mod2.results,file=paste(isp,"_mod2_big_posterior_20140618.Rdata",sep=""))
+  ##save(mod2.results,file=paste(isp,"_mod2_posterior.Rdata",sep=""))
+  ##save(mod2.results,file=paste(isp,"_mod2_big_posterior.Rdata",sep=""))
+  ##save(mod2.results,file=paste(isp,"_mod2_test_posterior.Rdata",sep=""))
+  ##save(mod2.results,file=paste(isp,"_mod2_20140604_2_posterior.Rdata",sep=""))
+  save(mod2.results,file=paste(isp,"_mod2_big_posterior_20140618.Rdata",sep=""))
 
-#}
+}
 
 
 ######## NO REGIMES #############
